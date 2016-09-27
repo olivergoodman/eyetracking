@@ -2,28 +2,21 @@
 
 import socket
 
-def check_server(address, port):
-    # Create a TCP socket
-    s = socket.socket()
-    print "Attempting to connect to %s on port %s" % (address, port)
-    try:
-        s.connect((address, port))
-        print "Connected to %s on port %s" % (address, port)
-        return True
-    except socket.error, e:
-        print "Connection to %s on port %s failed: %s" % (address, port, e)
-        return False
+TCP_IP = '127.0.0.1'
+TCP_PORT = 6555 #EyeTribe port
+BUFFER_SIZE = 1024
+MESSAGE = "Hello, World!"
 
-def connect(address, port, buffer_size, message):
+def connect():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect((address, port))
-    s.send(message)
+    s.connect((TCP_IP, TCP_PORT))
+    s.send(MESSAGE)
 
-    while check_server(address, port):
-        data = s.recv(buffer_size)
-        print "received data:", data
-
-
-    s.close()
-
-	# set up separate thread for reading data pts
+    while True:
+        try:
+            data = s.recv(BUFFER_SIZE)
+            print "received data:", data
+        except socket.error as e:
+            s.close()
+            print "Error", e
+            raise e
