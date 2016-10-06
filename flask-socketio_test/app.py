@@ -9,19 +9,6 @@ TCP_PORT = 6555 #EyeTribe port
 BUFFER_SIZE = 1024
 MESSAGE = "Hello, World!"
 
-# s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# s.connect((TCP_IP, TCP_PORT))
-# s.send(MESSAGE)
-
-# while True:
-#     try:
-#         data = s.recv(BUFFER_SIZE)
-#         eyetribe_data.append(data)
-#     except socket.error as e:
-#         s.close()
-#         print "Error", e
-#         raise e
-
 eyetribe_data = [1, 2, 3, 4]
 
 
@@ -38,13 +25,24 @@ thread = None
 
 def background_thread():
     """Example of how to send server generated events to clients."""
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((TCP_IP, TCP_PORT))
+    s.send(MESSAGE)
+
     count = 0
     while True:
-        socketio.sleep(2)
-        count += 1
-        socketio.emit('my_response',
-                      {'data': eyetribe_data[count-1], 'count': count},
-                      namespace='/test')
+      try:
+          data = s.recv(BUFFER_SIZE)
+      except socket.error as e:
+          s.close()
+          print "Error", e
+          raise e
+
+      socketio.sleep(2)
+      count += 1
+      socketio.emit('my_response',
+                    {'data': data, 'count': count},
+                    namespace='/test')
 
 
 @app.route('/')
