@@ -3,28 +3,25 @@ from flask import Flask, render_template, session, request
 from flask_socketio import SocketIO, emit, disconnect
 import socket
 import threading
-
-TCP_IP = '127.0.0.1'
-TCP_PORT = 6555 #EyeTribe port
-BUFFER_SIZE = 1024
-MESSAGE = "Hello, World!"
-
-eyetribe_data = [1, 2, 3, 4]
+import json
 
 
 # Set this variable to "threading", "eventlet" or "gevent" to test the
 # different async modes, or leave it set to None for the application to choose
 # the best option based on installed packages.
 async_mode = None
-
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, async_mode=async_mode)
 thread = None
 
+TCP_IP = '127.0.0.1'
+TCP_PORT = 6555 #EyeTribe port
+BUFFER_SIZE = 1024
+MESSAGE = "Hello, World!"
 
 def background_thread():
-    """Example of how to send server generated events to clients."""
+    """Send server generated events to clients in background thread, includes EyeTribe data getting."""
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((TCP_IP, TCP_PORT))
     s.send(MESSAGE)
@@ -33,15 +30,16 @@ def background_thread():
     while True:
       try:
           data = s.recv(BUFFER_SIZE)
+          data_json = json.loads(data);
+          avg_eye_coord = data_json['values']['frame']
       except socket.error as e:
           s.close()
-          print "Error", e
+          print "Error getting Eyetribe data:", e
           raise e
 
-      socketio.sleep(2)
       count += 1
       socketio.emit('my_response',
-                    {'data': data, 'count': count},
+                    {'data': avg_eye_coord, 'count': count},
                     namespace='/test')
 
 

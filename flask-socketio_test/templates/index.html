@@ -1,4 +1,4 @@
-<!DOCTYPE HTML>
+<!-- <!DOCTYPE HTML> -->
 <html>
 <head>
     <title>Flask-SocketIO Test</title>
@@ -30,7 +30,20 @@
             // to the client. The data is then displayed in the "Received"
             // section of the page.
             socket.on('my_response', function(msg) {
-                $('#log').append('<br>' + $('<div/>').text('Received #' + msg.count + ': ' + msg.data).html());
+                var data = msg.data;
+                var avg_eye_coordinate = msg.data['avg'];
+                
+                console.log(avg_eye_coordinate);
+
+                if (avg_eye_coordinate) {
+                    var x_pos = avg_eye_coordinate['x'];
+                    var y_pos = avg_eye_coordinate['y'];
+
+                    var c = document.getElementById('cursor');
+                    c.style.position = "absolute";
+                    c.style.left = x_pos+'px';
+                    c.style.top = y_pos+'px';    
+                }
             });
 
             // Interval function that tests message latency by sending a "ping"
@@ -75,6 +88,9 @@
     </script>
 </head>
 <body>
+    
+    <img id="cursor" src= {{ url_for('static', filename = 'images/crosshair.png') }} height="50px" width="50px">
+
     <h1>Flask-SocketIO Test</h1>
     <p>Async mode is: <b>{{ async_mode }}</b></p>
     <p>Average ping/pong latency: <b><span id="ping-pong"></span>ms</b></p>
@@ -92,5 +108,6 @@
     </form>
     <h2>Receive:</h2>
     <div id="log"></div>
+
 </body>
 </html>
