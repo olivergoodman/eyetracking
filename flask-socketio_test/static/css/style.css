@@ -1,0 +1,9 @@
+body {
+	background-color: #ffff99;
+}
+
+#cursor {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+}
