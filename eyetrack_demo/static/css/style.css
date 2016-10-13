@@ -9,25 +9,25 @@ body {
 }
 
 #header {
-	height: 5%;
 	display: block;
 }
 
 #content {
-	height: 65%;
+	height: 63%;
 	display: block;
+	background-color: white;
+	padding: 10px;
 }
 
 #footer {
-	height: 30%;
+	/*height: 30%;*/
 	display: block;
 }
 
-
 #demo {
-	background-color: white;
 	width: 100%;
 	height: 100%;
+	padding-left: 100px;
 }
 
 #box1 {

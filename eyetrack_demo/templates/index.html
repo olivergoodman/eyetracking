@@ -16,14 +16,14 @@
 
     <div id="content">
         <img id="cursor" src= {{ url_for('static', filename = 'images/eye.svg') }} height="50px" width="50px">
-        <button id="btn-track">Track</button>
-        <form id="disconnect" method="POST" action="#">
-            <input type="submit" value="Disconnect">
-        </form>
-        <br>
-        <button id="btn-play">Play</button>
-        <button id="btn-pause">Pause</button>
-        <button id="btn-stop">Stop</button>
+        <div id="controls">
+            <button id="btn-track">Track</button>
+            <form id="disconnect" method="POST" action="#">
+                <input type="submit" value="Disconnect">
+            </form>        
+            <button id="btn-play">Play</button>
+            <button id="btn-pause">Pause</button>
+            <button id="btn-stop">Stop</button></div>
         <div id="demo">
             <div id="box1"></div>
         </div>
