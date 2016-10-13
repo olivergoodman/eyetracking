@@ -7,3 +7,33 @@ body {
 	top: 50%;
 	left: 50%;
 }
+
+#header {
+	height: 5%;
+	display: block;
+}
+
+#content {
+	height: 65%;
+	display: block;
+}
+
+#footer {
+	height: 30%;
+	display: block;
+}
+
+
+#demo {
+	background-color: white;
+	width: 100%;
+	height: 100%;
+}
+
+#box1 {
+	height: 50;
+	width: 50px;
+	background-color: red;
+	border-radius: 100px;
+	position: relative;
+}

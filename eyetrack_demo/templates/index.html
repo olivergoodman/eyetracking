@@ -10,25 +10,41 @@
 </head>
 
 <body>
-    <img id="cursor" src= {{ url_for('static', filename = 'images/eye.svg') }} height="50px" width="50px">
+    <div id="header">
+        <h1>Eyetracking Demo</h1>
+    </div>
 
-    <h1>Eyetracking Demo</h1>
-    <p>Async mode is: <b>{{ async_mode }}</b></p>
-    <p>Average ping/pong latency: <b><span id="ping-pong"></span>ms</b></p>
-    <h2>Send:</h2>
-    <form id="emit" method="POST" action='#'>
-        <input type="text" name="emit_data" id="emit_data" placeholder="Message">
-        <input type="submit" value="Echo">
-    </form>
-    <form id="broadcast" method="POST" action='#'>
-        <input type="text" name="broadcast_data" id="broadcast_data" placeholder="Message">
-        <input type="submit" value="Broadcast">
-    </form>
-    <form id="disconnect" method="POST" action="#">
-        <input type="submit" value="Disconnect">
-    </form>
-    <h2>Receive:</h2>
-    <div id="log"></div>
+    <div id="content">
+        <img id="cursor" src= {{ url_for('static', filename = 'images/eye.svg') }} height="50px" width="50px">
+        <button id="btn-track">Track</button>
+        <form id="disconnect" method="POST" action="#">
+            <input type="submit" value="Disconnect">
+        </form>
+        <br>
+        <button id="btn-play">Play</button>
+        <button id="btn-pause">Pause</button>
+        <button id="btn-stop">Stop</button>
+        <div id="demo">
+            <div id="box1"></div>
+        </div>
+    </div>
+
+    <div id="footer">
+        <p>Async mode is: <b>{{ async_mode }}</b></p>
+        <p>Average ping/pong latency: <b><span id="ping-pong"></span>ms</b></p>
+        <h2>Send:</h2>
+        <form id="emit" method="POST" action='#'>
+            <input type="text" name="emit_data" id="emit_data" placeholder="Message">
+            <input type="submit" value="Echo">
+        </form>
+        <form id="broadcast" method="POST" action='#'>
+            <input type="text" name="broadcast_data" id="broadcast_data" placeholder="Message">
+            <input type="submit" value="Broadcast">
+        </form>
+
+        <h2>Receive:</h2>
+        <div id="log"></div>
+    </div>
 
 </body>
 </html>
