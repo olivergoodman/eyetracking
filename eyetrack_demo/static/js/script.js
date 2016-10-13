@@ -2,10 +2,10 @@ $(document).ready(function() {
 
     var t = 0;
     function moveit() {
-        t += 0.025;
-        var r = 200;
-        var xcenter = 200;
-        var ycenter = 200;
+        t += 0.02;
+        var r = 250;
+        var xcenter = 250;
+        var ycenter = 250;
         var newLeft = Math.floor(xcenter + (r * Math.cos(t)));
         var newTop = Math.floor(ycenter + (r * Math.sin(t)));
         $('#box1').animate({
