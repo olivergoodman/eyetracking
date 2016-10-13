@@ -1,7 +1,7 @@
 <!-- <!DOCTYPE HTML> -->
 <html>
 <head>
-    <title>Flask-SocketIO Test</title>
+    <title>Eyetracking Demo</title>
 
     <link rel="stylesheet" type="text/css" href="{{ url_for ('static', filename='css/style.css') }}">
     <script type="text/javascript" src="//code.jquery.com/jquery-1.4.2.min.js"></script>
@@ -10,9 +10,9 @@
 </head>
 
 <body>
-    <img id="cursor" src= {{ url_for('static', filename = 'images/crosshair.png') }} height="50px" width="50px">
+    <img id="cursor" src= {{ url_for('static', filename = 'images/eye.svg') }} height="50px" width="50px">
 
-    <h1>Flask-SocketIO Test</h1>
+    <h1>Eyetracking Demo</h1>
     <p>Async mode is: <b>{{ async_mode }}</b></p>
     <p>Average ping/pong latency: <b><span id="ping-pong"></span>ms</b></p>
     <h2>Send:</h2>
