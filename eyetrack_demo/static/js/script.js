@@ -25,7 +25,9 @@ $(document).ready(function() {
     })
 
     $('#btn-stop').click(function() {
-        $('#box1').stop();
+        $('#box1').stop()
+        $('#box1').removeAttr('style')
+        t = 0;
         $('#box1').css({'left':'0px', 'top':'0px'});
     });
 
