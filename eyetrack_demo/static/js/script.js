@@ -16,14 +16,17 @@ $(document).ready(function() {
         });
     }
 
+    // play animation
     $('#btn-play').click(function() {
         moveit();
     });
 
+    // pause animation
     $('#btn-pause').click(function() {
         $('#box1').stop();
     })
 
+    // stop/reset animation
     $('#btn-stop').click(function() {
         $('#box1').stop()
         $('#box1').removeAttr('style')
@@ -31,8 +34,85 @@ $(document).ready(function() {
         $('#box1').css({'left':'0px', 'top':'0px'});
     });
 
+    ////
+    ////
+    //// TO DO
+    //// fix toggling behavior for record
+    //// send data to backend
+
+    // Record eyetracking/animation coordinates
+    $('#btn-record').one("click", recordHandler1);
+
+    //handler for toggling record ON
+    function recordHandler1() {
+        $('#btn-record').addClass("session-on");
+        console.log('record turned ON')
+
+        var time = new Date($.now());
+
+        // Alert backend to begin storing eyetracking session + start time
+        var data = {'record_eye_data': true, 'time': time}
+        $.ajax({
+            type: 'POST',
+            url: '/_get_eyetrack_data',
+            data: JSON.stringify(data, null, '\t'),
+            contentType: 'application/json;charset=UTF-8',
+            dataType : "json",
+            success: function(response) {
+                console.log(response);
+            },
+            error: function(response) { 
+                console.log(response.status + ": could not pass data to server");  
+            }
+        }); 
+
+        //connect socket
+        namespace = '/test';
+        var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
+        socket.on('connect', function() {
+                 socket.emit('my_event', {data: 'I\'m connected!'});
+        });
+
+        // record object coords while session ON, start/end time
+        var object_data = [];
+        var object = $("#box1");
+        object_data += object.position();
+        var start_time = new Date($.now());
+
+        // switch to toggle off
+        $(this).one("click", recordHandler2);
+    }
+
+    //handler for toggling record OFF
+    function recordHandler2() {
+        $('#btn-record').removeClass("session-on");
+        console.log('record turned OFF');
+
+        var time = new Date($.now());
+
+        // Alert backend to stop storing eyetracking session + end
+        var data = {'record_eye_data': false, 'time': time}
+        $.ajax({
+            type: 'POST',
+            url: '/_get_eyetrack_data',
+            data: JSON.stringify(data, null, '\t'),
+            contentType: 'application/json;charset=UTF-8',
+            dataType : "json",
+            success: function(response) {
+                console.log(response);
+            },
+            error: function(response) { 
+                console.log(response.status + ": could not pass data to server");  
+            }
+        }); 
+
+        // switch to toggle on
+        $(this).one("click", recordHandler1);
+    }
+
+
+    // Tracking: see if eye tracker is working
     $('#btn-track').click(function() {
-        console.log('clicked track');
 
         // Use a "/test" namespace.
         // An application can open a connection on multiple namespaces, and

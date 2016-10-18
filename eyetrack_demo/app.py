@@ -37,10 +37,17 @@ def background_thread():
           print "Error getting Eyetribe data:", e
           raise e
 
+
       count += 1
       socketio.emit('my_response',
                     {'data': avg_eye_coord, 'count': count},
                     namespace='/test')
+
+@app.route('/_get_eyetrack_data', methods = ['GET', 'POST'])
+def _get_eyetrack_data():
+  if request.method == 'POST':
+    print request.json['data']
+    return
 
 
 @app.route('/')

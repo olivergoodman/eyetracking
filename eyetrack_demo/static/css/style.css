@@ -5,8 +5,8 @@ body {
 
 #cursor {
 	position: absolute;
-	top: 50%;
-	left: 50%;
+	top: 0px;
+	left: 0px;
 }
 
 #header {
@@ -42,6 +42,19 @@ body {
 	display: inline-block;
 }
 
-#dropdowns {
-	margin-bottom: 10px;
+.controls {
+	display: inline-block;
+	margin-right: 50px;
+}
+
+form {
+	display: inline-block;
+}
+
+.session-on {
+	background-color: yellow;
+}
+
+button {
+	outline: none;
 }
