@@ -43,11 +43,10 @@ $(document).ready(function() {
     // Record eyetracking/animation coordinates
     $('#btn-record').one("click", recordHandler1);
 
-    //handler for toggling record ON
+    // handler for toggling record ON
     function recordHandler1() {
         $('#btn-record').addClass("session-on");
         console.log('record turned ON')
-
         var time = new Date($.now());
 
         // Alert backend to begin storing eyetracking session + start time
@@ -62,7 +61,7 @@ $(document).ready(function() {
                 console.log(response);
             },
             error: function(response) { 
-                console.log(response.status + ": could not pass data to server");  
+                console.log(response.status);  
             }
         }); 
 
@@ -78,7 +77,6 @@ $(document).ready(function() {
         var object = $("#box1");
         object_data += object.position();
         var start_time = new Date($.now());
-
         // switch to toggle off
         $(this).one("click", recordHandler2);
     }
@@ -87,7 +85,6 @@ $(document).ready(function() {
     function recordHandler2() {
         $('#btn-record').removeClass("session-on");
         console.log('record turned OFF');
-
         var time = new Date($.now());
 
         // Alert backend to stop storing eyetracking session + end
@@ -102,10 +99,9 @@ $(document).ready(function() {
                 console.log(response);
             },
             error: function(response) { 
-                console.log(response.status + ": could not pass data to server");  
+                console.log(response.status);  
             }
         }); 
-
         // switch to toggle on
         $(this).one("click", recordHandler1);
     }
@@ -113,7 +109,6 @@ $(document).ready(function() {
 
     // Tracking: see if eye tracker is working
     $('#btn-track').click(function() {
-
         // Use a "/test" namespace.
         // An application can open a connection on multiple namespaces, and
         // Socket.IO will multiplex all those connections on a single

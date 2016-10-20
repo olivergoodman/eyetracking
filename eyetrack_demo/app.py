@@ -20,6 +20,8 @@ TCP_PORT = 6555 #EyeTribe port
 BUFFER_SIZE = 1024
 MESSAGE = "Hello, World!"
 
+RECORD_EYEDATA_FLAG = False
+
 def background_thread():
     """Send server generated events to clients in background thread, includes EyeTribe data getting."""
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -29,25 +31,33 @@ def background_thread():
     count = 0
     while True:
       try:
+          lst = []
           data = s.recv(BUFFER_SIZE)
-          data_json = json.loads(data);
-          avg_eye_coord = data_json['values']['frame']
+          lst.append(data)
+          data_json = json.loads(lst.pop())
+          avg_eye_coord =  data_json['values']['frame']
       except socket.error as e:
           s.close()
-          print "Error getting Eyetribe data:", e
+          print("Error getting Eyetribe data:", e)
           raise e
-
-
       count += 1
       socketio.emit('my_response',
                     {'data': avg_eye_coord, 'count': count},
                     namespace='/test')
+      if (RECORD_EYEDATA_FLAG == True):
+        print(data_json)
 
 @app.route('/_get_eyetrack_data', methods = ['GET', 'POST'])
 def _get_eyetrack_data():
   if request.method == 'POST':
-    print request.json['data']
-    return
+    start_tracking_flag = request.json['record_eye_data']
+    time = request.json['time']
+
+    if start_tracking_flag == True: 
+      RECORD_EYEDATA_FLAG = True
+    else:
+      RECORD_EYEDATA_FLAG = False
+    return str(request.form)
 
 
 @app.route('/')
