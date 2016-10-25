@@ -4,6 +4,7 @@ from flask_socketio import SocketIO, emit, disconnect
 import socket
 import threading
 import json
+import csv
 
 
 # Set this variable to "threading", "eventlet" or "gevent" to test the
@@ -68,9 +69,7 @@ def _get_eyetrack_data():
       START_TRACKING_FLAG = False
       object_coordinates = request.json['object_coordinates']
       end_time = time
-
       save_session_to_csv(START_TIME, end_time, EYETRACK_SESSION_DATA, object_coordinates)
-
       EYETRACK_SESSION_DATA = [] # reset session data
       START_TIME = 0 # reset start time
 
@@ -107,11 +106,20 @@ def get_eyetrack_session_data():
 
 #-------------------------------- Save relevant data to csv file --------------------------------
 def save_session_to_csv(start_time, end_time, eyetrack_session_data, object_coordinates):
-  # see csv docs
-  print start_time
-  print end_time
-  print object_coordinates
-  print eyetrack_session_data
+  with open('sessions.csv', 'wb') as f:
+    # writer = csv.writer(f)
+    # writer.writerow([start_time, end_time, eyetrack_session_data, object_coordinates])
+
+    fieldnames = ['start_time', 'end_time', 'eyetrack_session_data', 'object_coordinates']
+    writer = csv.DictWriter(f, fieldnames=fieldnames)
+
+    writer.writeheader()
+    writer.writerow({
+      'start_time': start_time,
+      'end_time': end_time,
+      'eyetrack_session_data': eyetrack_session_data,
+      'object_coordinates': object_coordinates})
+    
   return
 
 
