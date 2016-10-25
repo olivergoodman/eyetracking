@@ -36,20 +36,36 @@ $(document).ready(function() {
 
     ////
     ////
-    //// TO DO
-    //// fix toggling behavior for record
+    //// TO DO:
     //// send data to backend
+    //// accurately record object's coordinates
+    //// backup for storing eyetracking coord: don't alert backend, just send raw front-end coords back to back end (dumb but might work)
+
+    var object_coordinates = []
+    var interval = setInterval(recordObjectPosition, 100); //run every 0.1 seconds
+    function recordObjectPosition() {
+        if ($('#box1').hasClass('session-on'))
+        {
+            object_coordinates.push($('#box1').position()); //position stored as {'left':val, 'top':val}
+            console.log('object_coordinates');
+            clearInterval(interval);
+        }
+    };
 
     // Record eyetracking/animation coordinates
     $('#btn-record').one("click", recordHandler1);
 
-    // handler for toggling record ON
+    ////////// handler for toggling record ON //////////
+    ////////////////////////////////////////////////////
     function recordHandler1() {
         $('#btn-record').addClass("session-on");
         console.log('record turned ON')
+        var interval = setInterval(recordObjectPosition, 100); //run every 0.1 seconds
+
+        // start time
         var time = new Date($.now());
 
-        // Alert backend to begin storing eyetracking session + start time
+        // Alert backend to begsin storing eyetracking session + start time
         var data = {'record_eye_data': true, 'time': time}
         $.ajax({
             type: 'POST',
@@ -64,14 +80,6 @@ $(document).ready(function() {
                 console.log(response.status);  
             }
         }); 
-
-        //connect socket
-        namespace = '/test';
-        var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
-        socket.on('connect', function() {
-                 socket.emit('my_event', {data: 'I\'m connected!'});
-        });
-
         // record object coords while session ON, start/end time
         var object_data = [];
         var object = $("#box1");
@@ -81,14 +89,17 @@ $(document).ready(function() {
         $(this).one("click", recordHandler2);
     }
 
-    //handler for toggling record OFF
+    /////////// handler for toggling record OFF ///////////
+    ///////////////////////////////////////////////////////
     function recordHandler2() {
         $('#btn-record').removeClass("session-on");
         console.log('record turned OFF');
+
+        // end time
         var time = new Date($.now());
 
-        // Alert backend to stop storing eyetracking session + end
-        var data = {'record_eye_data': false, 'time': time}
+        // Alert backend to stop storing eyetracking session + end, pass end time + object's coordinates
+        var data = {'record_eye_data': false, 'time': time, 'object_coordinates': object_coordinates}
         $.ajax({
             type: 'POST',
             url: '/_get_eyetrack_data',
@@ -102,6 +113,10 @@ $(document).ready(function() {
                 console.log(response.status);  
             }
         }); 
+
+        //clear object's position
+        object_coordinates = [];
+
         // switch to toggle on
         $(this).one("click", recordHandler1);
     }

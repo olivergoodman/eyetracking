@@ -10,6 +10,7 @@ import json
 # different async modes, or leave it set to None for the application to choose
 # the best option based on installed packages.
 async_mode = None
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, async_mode=async_mode)
@@ -20,7 +21,8 @@ TCP_PORT = 6555 #EyeTribe port
 BUFFER_SIZE = 1024
 MESSAGE = "Hello, World!"
 
-RECORD_EYEDATA_FLAG = False
+START_TRACKING_FLAG = False
+EYETRACK_SESSION_DATA = []
 
 def background_thread():
     """Send server generated events to clients in background thread, includes EyeTribe data getting."""
@@ -35,29 +37,78 @@ def background_thread():
           data = s.recv(BUFFER_SIZE)
           lst.append(data)
           data_json = json.loads(lst.pop())
-          avg_eye_coord =  data_json['values']['frame']
+          eye_coord =  data_json['values']['frame']
       except socket.error as e:
           s.close()
           print("Error getting Eyetribe data:", e)
           raise e
       count += 1
       socketio.emit('my_response',
-                    {'data': avg_eye_coord, 'count': count},
+                    {'data': eye_coord, 'count': count},
                     namespace='/test')
-      if (RECORD_EYEDATA_FLAG == True):
-        print(data_json)
 
+#-------------------------------- Get FrontEnd info -------------------------------
 @app.route('/_get_eyetrack_data', methods = ['GET', 'POST'])
 def _get_eyetrack_data():
+  global START_TRACKING_FLAG
+  global EYETRACK_SESSION_DATA
+
   if request.method == 'POST':
     start_tracking_flag = request.json['record_eye_data']
     time = request.json['time']
 
-    if start_tracking_flag == True: 
-      RECORD_EYEDATA_FLAG = True
-    else:
-      RECORD_EYEDATA_FLAG = False
-    return str(request.form)
+    if start_tracking_flag == True: #and key doesn't contain object_coordinates
+      START_TRACKING_FLAG = True
+      start_time = time
+      EYETRACK_SESSION_DATA = get_eyetrack_session_data()      
+
+    else: # and if key contains 'object_coordinates'
+      START_TRACKING_FLAG = False
+      object_coordinates = request.json['object_coordinates']
+      end_time = time
+      print EYETRACK_SESSION_DATA
+
+      save_session_to_csv(start_time, end_time, EYETRACK_SESSION_DATA, object_coordinates)
+
+      EYETRACK_SESSION_DATA = []
+
+
+  return str(request.form)
+
+#-------------------------------- Get the eyetrack data from one session --------------------------------
+def get_eyetrack_session_data():
+  global START_TRACKING_FLAG
+  global EYETRACK_SESSION_DATA
+
+  #if existing thread exists, kill it
+  # make eyetribe connection
+  s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+  s.connect((TCP_IP, TCP_PORT))
+  s.send(MESSAGE)
+
+  while True: ## loop until thread is killed ?
+    try:
+        lst = []
+        data = s.recv(BUFFER_SIZE)
+        lst.append(data)
+        data_json = json.loads(lst.pop())
+        avg_eye_coord =  data_json['values']['frame']
+    except socket.error as e:
+        s.close()
+        print("Error getting Eyetribe data:", e)
+        raise e
+    
+    EYETRACK_SESSION_DATA.append(avg_eye_coord)
+    if START_TRACKING_FLAG == False:
+      return EYETRACK_SESSION_DATA
+  #start saving that stream of coordinates
+  return EYETRACK_SESSION_DATA
+
+#-------------------------------- Save relevant data to csv file --------------------------------
+def save_session_to_csv(start_time, end_time, eyetrack_session_data, object_coordinates):
+  # see csv docs
+  return
+
 
 
 @app.route('/')
