@@ -34,33 +34,35 @@ $(document).ready(function() {
         $('#box1').css({'left':'0px', 'top':'0px'});
     });
 
-    ////
-    ////
-    //// TO DO:
-    //// send data to backend
-    //// accurately record object's coordinates
-    //// backup for storing eyetracking coord: don't alert backend, just send raw front-end coords back to back end (dumb but might work)
 
-    var object_coordinates = []
-    var interval = setInterval(recordObjectPosition, 100); //run every 0.1 seconds
+    var object_coordinates = [];
+    var timer = null;
+    var interval = 100; // record every 0.1 seconds
+
     function recordObjectPosition() {
-        if ($('#box1').hasClass('session-on'))
-        {
-            object_coordinates.push($('#box1').position()); //position stored as {'left':val, 'top':val}
-            console.log('object_coordinates');
-            clearInterval(interval);
-        }
+        object_coordinates.push($('#box1').position()); //position stored as {'left':val, 'top':val}
+    };
+
+    function stopRecordingObject() {
+        clearInterval(timer);  
+        timer = null;
+        console.log(object_coordinates);
+        object_coordinates = [];
     };
 
     // Record eyetracking/animation coordinates
     $('#btn-record').one("click", recordHandler1);
 
-    ////////// handler for toggling record ON //////////
-    ////////////////////////////////////////////////////
+    ////////////////////////////////////////// handler for toggling record ON ////////////////////////////////
     function recordHandler1() {
         $('#btn-record').addClass("session-on");
         console.log('record turned ON')
-        var interval = setInterval(recordObjectPosition, 100); //run every 0.1 seconds
+
+        // start recording object position
+        if (timer !== null) return;
+        timer = setInterval(function () {
+            recordObjectPosition();
+        }, interval); 
 
         // start time
         var time = new Date($.now());
@@ -89,8 +91,7 @@ $(document).ready(function() {
         $(this).one("click", recordHandler2);
     }
 
-    /////////// handler for toggling record OFF ///////////
-    ///////////////////////////////////////////////////////
+    //////////////////////////////// handler for toggling record OFF ////////////////////////////////
     function recordHandler2() {
         $('#btn-record').removeClass("session-on");
         console.log('record turned OFF');
@@ -114,14 +115,14 @@ $(document).ready(function() {
             }
         }); 
 
-        //clear object's position
-        object_coordinates = [];
+        stopRecordingObject();
 
         // switch to toggle on
         $(this).one("click", recordHandler1);
     }
 
 
+    ////////////////////////////////////////////// Tracking behavior ////////////////////////////////////
     // Tracking: see if eye tracker is working
     $('#btn-track').click(function() {
         // Use a "/test" namespace.

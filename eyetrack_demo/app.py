@@ -23,6 +23,7 @@ MESSAGE = "Hello, World!"
 
 START_TRACKING_FLAG = False
 EYETRACK_SESSION_DATA = []
+START_TIME = 0
 
 def background_thread():
     """Send server generated events to clients in background thread, includes EyeTribe data getting."""
@@ -52,6 +53,7 @@ def background_thread():
 def _get_eyetrack_data():
   global START_TRACKING_FLAG
   global EYETRACK_SESSION_DATA
+  global START_TIME
 
   if request.method == 'POST':
     start_tracking_flag = request.json['record_eye_data']
@@ -59,19 +61,18 @@ def _get_eyetrack_data():
 
     if start_tracking_flag == True: #and key doesn't contain object_coordinates
       START_TRACKING_FLAG = True
-      start_time = time
+      START_TIME = time
       EYETRACK_SESSION_DATA = get_eyetrack_session_data()      
 
     else: # and if key contains 'object_coordinates'
       START_TRACKING_FLAG = False
       object_coordinates = request.json['object_coordinates']
       end_time = time
-      print EYETRACK_SESSION_DATA
 
-      save_session_to_csv(start_time, end_time, EYETRACK_SESSION_DATA, object_coordinates)
+      save_session_to_csv(START_TIME, end_time, EYETRACK_SESSION_DATA, object_coordinates)
 
-      EYETRACK_SESSION_DATA = []
-
+      EYETRACK_SESSION_DATA = [] # reset session data
+      START_TIME = 0 # reset start time
 
   return str(request.form)
 
@@ -107,6 +108,10 @@ def get_eyetrack_session_data():
 #-------------------------------- Save relevant data to csv file --------------------------------
 def save_session_to_csv(start_time, end_time, eyetrack_session_data, object_coordinates):
   # see csv docs
+  print start_time
+  print end_time
+  print object_coordinates
+  print eyetrack_session_data
   return
 
 
