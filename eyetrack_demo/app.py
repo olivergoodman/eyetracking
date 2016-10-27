@@ -106,20 +106,15 @@ def get_eyetrack_session_data():
 
 #-------------------------------- Save relevant data to csv file --------------------------------
 def save_session_to_csv(start_time, end_time, eyetrack_session_data, object_coordinates):
-  with open('sessions.csv', 'wb') as f:
-    # writer = csv.writer(f)
-    # writer.writerow([start_time, end_time, eyetrack_session_data, object_coordinates])
-
+  with open('sessions.csv', 'a') as f:
     fieldnames = ['start_time', 'end_time', 'eyetrack_session_data', 'object_coordinates']
     writer = csv.DictWriter(f, fieldnames=fieldnames)
-
-    writer.writeheader()
     writer.writerow({
       'start_time': start_time,
       'end_time': end_time,
       'eyetrack_session_data': eyetrack_session_data,
       'object_coordinates': object_coordinates})
-    
+
   return
 
 
