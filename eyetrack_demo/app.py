@@ -116,10 +116,11 @@ def save_session_to_csv(start_time, end_time, eyetrack_session_data, object_coor
   #     'end_time': end_time,
   #     'eyetrack_session_data': eyetrack_session_data,
   #     'object_coordinates': object_coordinates})
-  session_data = {'start_time': str(start_time), 'end_time': str(end_time)}
-  session_id = models.insert_session_data(session_data)
 
-  models.insert_tracking_data(session_id, eyetrack_session_data, object_coordinates)
+  session_data = {'start_time': str(start_time), 'end_time': str(end_time)}
+  models.insert_session_data(session_data, eyetrack_session_data, object_coordinates)
+
+  # models.insert_tracking_data(session_id, eyetrack_session_data, object_coordinates)
 
   return
 
