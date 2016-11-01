@@ -5,6 +5,8 @@ import socket
 import threading
 import json
 import csv
+import models
+import psycopg2
 
 
 # Set this variable to "threading", "eventlet" or "gevent" to test the
@@ -106,14 +108,18 @@ def get_eyetrack_session_data():
 
 #-------------------------------- Save relevant data to csv file --------------------------------
 def save_session_to_csv(start_time, end_time, eyetrack_session_data, object_coordinates):
-  with open('sessions.csv', 'a') as f:
-    fieldnames = ['start_time', 'end_time', 'eyetrack_session_data', 'object_coordinates']
-    writer = csv.DictWriter(f, fieldnames=fieldnames)
-    writer.writerow({
-      'start_time': start_time,
-      'end_time': end_time,
-      'eyetrack_session_data': eyetrack_session_data,
-      'object_coordinates': object_coordinates})
+  # with open('sessions.csv', 'a') as f:
+  #   fieldnames = ['start_time', 'end_time', 'eyetrack_session_data', 'object_coordinates']
+  #   writer = csv.DictWriter(f, fieldnames=fieldnames)
+  #   writer.writerow({
+  #     'start_time': start_time,
+  #     'end_time': end_time,
+  #     'eyetrack_session_data': eyetrack_session_data,
+  #     'object_coordinates': object_coordinates})
+  session_data = {'start_time': str(start_time), 'end_time': str(end_time)}
+  session_id = models.insert_session_data(session_data)
+
+  models.insert_tracking_data(session_id, eyetrack_session_data, object_coordinates)
 
   return
 
@@ -121,49 +127,50 @@ def save_session_to_csv(start_time, end_time, eyetrack_session_data, object_coor
 
 @app.route('/')
 def index():
-    return render_template('index.html', async_mode=socketio.async_mode)
+  return render_template('index.html', async_mode=socketio.async_mode)
 
 
 @socketio.on('my_event', namespace='/test')
 def test_message(message):
-    session['receive_count'] = session.get('receive_count', 0) + 1
-    emit('my_response',
-         {'data': message['data'], 'count': session['receive_count']})
+  session['receive_count'] = session.get('receive_count', 0) + 1
+  emit('my_response',
+       {'data': message['data'], 'count': session['receive_count']})
 
 
 @socketio.on('my_broadcast_event', namespace='/test')
 def test_broadcast_message(message):
-    session['receive_count'] = session.get('receive_count', 0) + 1
-    emit('my_response',
-         {'data': message['data'], 'count': session['receive_count']},
-         broadcast=True)
+  session['receive_count'] = session.get('receive_count', 0) + 1
+  emit('my_response',
+       {'data': message['data'], 'count': session['receive_count']},
+       broadcast=True)
 
 
 @socketio.on('disconnect_request', namespace='/test')
 def disconnect_request():
-    session['receive_count'] = session.get('receive_count', 0) + 1
-    emit('my_response',
-         {'data': 'Disconnected!', 'count': session['receive_count']})
-    disconnect()
+  session['receive_count'] = session.get('receive_count', 0) + 1
+  emit('my_response',
+       {'data': 'Disconnected!', 'count': session['receive_count']})
+  disconnect()
 
 
 @socketio.on('my_ping', namespace='/test')
 def ping_pong():
-    emit('my_pong')
+  emit('my_pong')
 
 
 @socketio.on('connect', namespace='/test')
 def test_connect():
-    global thread
-    if thread is None:
-        thread = socketio.start_background_task(target=background_thread)
-    emit('my_response', {'data': 'Connected', 'count': 0})
+  global thread
+  if thread is None:
+      thread = socketio.start_background_task(target=background_thread)
+  emit('my_response', {'data': 'Connected', 'count': 0})
 
 
 @socketio.on('disconnect', namespace='/test')
 def test_disconnect():
-    print('Client disconnected', request.sid)
+  print('Client disconnected', request.sid)
 
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True)
+  socketio.run(app, debug=True)
+
