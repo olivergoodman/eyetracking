@@ -90,15 +90,15 @@ def get_eyetrack_session_data():
 
   while True: ## loop until thread is killed ?
     try:
-        lst = []
-        data = s.recv(BUFFER_SIZE)
-        lst.append(data)
-        data_json = json.loads(lst.pop())
-        avg_eye_coord =  data_json['values']['frame']
+      lst = []
+      data = s.recv(BUFFER_SIZE)
+      lst.append(data)
+      data_json = json.loads(lst.pop())
+      avg_eye_coord =  data_json['values']['frame']
     except socket.error as e:
-        s.close()
-        print("Error getting Eyetribe data:", e)
-        raise e
+      s.close()
+      print("Error getting Eyetribe data:", e)
+      raise e
     
     EYETRACK_SESSION_DATA.append(avg_eye_coord)
     if START_TRACKING_FLAG == False:
@@ -119,8 +119,6 @@ def save_session_to_csv(start_time, end_time, eyetrack_session_data, object_coor
 
   session_data = {'start_time': str(start_time), 'end_time': str(end_time)}
   models.insert_session_data(session_data, eyetrack_session_data, object_coordinates)
-
-  # models.insert_tracking_data(session_id, eyetrack_session_data, object_coordinates)
 
   return
 

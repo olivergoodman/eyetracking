@@ -71,7 +71,7 @@ $(document).ready(function() {
         var data = {'record_eye_data': true, 'time': time}
         $.ajax({
             type: 'POST',
-            url: '/_get_eyetrack_data',
+            url: '/_get_eyetrack_data1',
             data: JSON.stringify(data, null, '\t'),
             contentType: 'application/json;charset=UTF-8',
             dataType : "json",
@@ -103,7 +103,7 @@ $(document).ready(function() {
         var data = {'record_eye_data': false, 'time': time, 'object_coordinates': object_coordinates}
         $.ajax({
             type: 'POST',
-            url: '/_get_eyetrack_data',
+            url: '/_get_eyetrack_data2',
             data: JSON.stringify(data, null, '\t'),
             contentType: 'application/json;charset=UTF-8',
             dataType : "json",
