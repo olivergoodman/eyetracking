@@ -16,14 +16,17 @@ $(document).ready(function() {
         });
     }
 
+    // play animation
     $('#btn-play').click(function() {
         moveit();
     });
 
+    // pause animation
     $('#btn-pause').click(function() {
         $('#box1').stop();
     })
 
+    // stop/reset animation
     $('#btn-stop').click(function() {
         $('#box1').stop()
         $('#box1').removeAttr('style')
@@ -31,9 +34,96 @@ $(document).ready(function() {
         $('#box1').css({'left':'0px', 'top':'0px'});
     });
 
-    $('#btn-track').click(function() {
-        console.log('clicked track');
 
+    var object_coordinates = [];
+    var timer = null;
+    var interval = 100; // record every 0.1 seconds
+
+    function recordObjectPosition() {
+        object_coordinates.push($('#box1').position()); //position stored as {'left':val, 'top':val}
+    };
+
+    function stopRecordingObject() {
+        clearInterval(timer);  
+        timer = null;
+        object_coordinates = [];
+    };
+
+    // Record eyetracking/animation coordinates
+    $('#btn-record').one("click", recordHandler1);
+
+    ////////////////////////////////////////// handler for toggling record ON ////////////////////////////////
+    function recordHandler1() {
+        $('#btn-record').addClass("session-on");
+        console.log('record turned ON')
+
+        // start recording object position
+        if (timer !== null) return;
+        timer = setInterval(function () {
+            recordObjectPosition();
+        }, interval); 
+
+        // start time
+        var time = new Date($.now());
+
+        // Alert backend to begsin storing eyetracking session + start time
+        var data = {'record_eye_data': true, 'time': time}
+        $.ajax({
+            type: 'POST',
+            url: '/_get_eyetrack_data',
+            data: JSON.stringify(data, null, '\t'),
+            contentType: 'application/json;charset=UTF-8',
+            dataType : "json",
+            success: function(response) {
+                console.log(response);
+            },
+            error: function(response) { 
+                console.log(response.status);  
+            }
+        }); 
+        // record object coords while session ON, start/end time
+        var object_data = [];
+        var object = $("#box1");
+        object_data += object.position();
+        var start_time = new Date($.now());
+        // switch to toggle off
+        $(this).one("click", recordHandler2);
+    }
+
+    //////////////////////////////// handler for toggling record OFF ////////////////////////////////
+    function recordHandler2() {
+        $('#btn-record').removeClass("session-on");
+        console.log('record turned OFF');
+
+        // end time
+        var time = new Date($.now());
+
+        // Alert backend to stop storing eyetracking session + end, pass end time + object's coordinates
+        var data = {'record_eye_data': false, 'time': time, 'object_coordinates': object_coordinates}
+        $.ajax({
+            type: 'POST',
+            url: '/_get_eyetrack_data',
+            data: JSON.stringify(data, null, '\t'),
+            contentType: 'application/json;charset=UTF-8',
+            dataType : "json",
+            success: function(response) {
+                console.log(response);
+            },
+            error: function(response) { 
+                console.log(response.status);  
+            }
+        }); 
+
+        stopRecordingObject();
+
+        // switch to toggle on
+        $(this).one("click", recordHandler1);
+    }
+
+
+    ////////////////////////////////////////////// Tracking behavior ////////////////////////////////////
+    // Tracking: see if eye tracker is working
+    $('#btn-track').click(function() {
         // Use a "/test" namespace.
         // An application can open a connection on multiple namespaces, and
         // Socket.IO will multiplex all those connections on a single
