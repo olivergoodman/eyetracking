@@ -90,14 +90,15 @@ def get_eyetrack_session_data():
 
   while True: ## loop until thread is killed ?
     try:
+      decoder = json.JSONDecoder()
       data = s.recv(BUFFER_SIZE)
+      obj, idx = decoder.raw_decode(data)
     except socket.error as e:
       s.close()
       print("Error getting Eyetribe data:", e)
       raise e
     
-    data.replace('\n', '')
-    EYETRACK_SESSION_DATA.append(data)
+    EYETRACK_SESSION_DATA.append(obj)
     if START_TRACKING_FLAG == False:
       s.close()
       return EYETRACK_SESSION_DATA
@@ -118,12 +119,7 @@ def save_session(start_time, end_time, eyetrack_session_data, object_coordinates
   json_eye_data_list = []
   try:
     for eye_data in eyetrack_session_data:
-      eye_data = eye_data.rstrip('\n')
-      json_eye_coord = json.loads(eye_data)
-      print eye_data
-      print json_eye_coord
-      print '---'
-      avg_eye_coord = json_eye_coord['values']['frame']
+      avg_eye_coord = eye_data['values']['frame']
       json_eye_data_list.append(avg_eye_coord)
 
     session_data = {'start_time': str(start_time), 'end_time': str(end_time)}
