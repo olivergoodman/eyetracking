@@ -3,7 +3,7 @@ from flask import Flask, render_template, session, request
 from flask_socketio import SocketIO, emit, disconnect
 import socket
 import threading
-import json
+import simplejson as json
 import csv
 import models
 import psycopg2
@@ -65,13 +65,13 @@ def _get_eyetrack_data():
     if start_tracking_flag == True: #and key doesn't contain object_coordinates
       START_TRACKING_FLAG = True
       START_TIME = time
-      EYETRACK_SESSION_DATA = get_eyetrack_session_data()      
+      EYETRACK_SESSION_DATA = get_eyetrack_session_data()
 
     else: # and if key contains 'object_coordinates'
       START_TRACKING_FLAG = False
       object_coordinates = request.json['object_coordinates']
       end_time = time
-      save_session_to_csv(START_TIME, end_time, EYETRACK_SESSION_DATA, object_coordinates)
+      save_session(START_TIME, end_time, EYETRACK_SESSION_DATA, object_coordinates)
       EYETRACK_SESSION_DATA = [] # reset session data
       START_TIME = 0 # reset start time
 
@@ -88,26 +88,24 @@ def get_eyetrack_session_data():
   s.connect((TCP_IP, TCP_PORT))
   s.send(MESSAGE)
 
+###################### to avoid extra data error: just pass raw data string to models, parse it all there"
+
   while True: ## loop until thread is killed ?
     try:
-      lst = []
       data = s.recv(BUFFER_SIZE)
-      lst.append(data)
-      data_json = json.loads(lst.pop())
-      avg_eye_coord =  data_json['values']['frame']
     except socket.error as e:
       s.close()
       print("Error getting Eyetribe data:", e)
       raise e
     
-    EYETRACK_SESSION_DATA.append(avg_eye_coord)
+    EYETRACK_SESSION_DATA.append(data)
     if START_TRACKING_FLAG == False:
       return EYETRACK_SESSION_DATA
   #start saving that stream of coordinates
   return EYETRACK_SESSION_DATA
 
 #-------------------------------- Save relevant data to csv file --------------------------------
-def save_session_to_csv(start_time, end_time, eyetrack_session_data, object_coordinates):
+def save_session(start_time, end_time, eyetrack_session_data, object_coordinates):
   # with open('sessions.csv', 'a') as f:
   #   fieldnames = ['start_time', 'end_time', 'eyetrack_session_data', 'object_coordinates']
   #   writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -116,10 +114,15 @@ def save_session_to_csv(start_time, end_time, eyetrack_session_data, object_coor
   #     'end_time': end_time,
   #     'eyetrack_session_data': eyetrack_session_data,
   #     'object_coordinates': object_coordinates})
+  json_eye_data_list = []
+  for eye_data in eyetrack_session_data:
+    eye_data.replace('\n', '')
+    json_eye_coord = json.loads(eye_data)
+    avg_eye_coord = json_eye_coord['values']['frame']
+    json_eye_data_list.append(avg_eye_coord)
 
   session_data = {'start_time': str(start_time), 'end_time': str(end_time)}
-  models.insert_session_data(session_data, eyetrack_session_data, object_coordinates)
-
+  models.insert_session_data(session_data, json_eye_data_list, object_coordinates)
   return
 
 
@@ -172,4 +175,3 @@ def test_disconnect():
 
 if __name__ == '__main__':
   socketio.run(app, debug=True)
-

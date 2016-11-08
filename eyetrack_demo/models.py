@@ -16,10 +16,8 @@ def insert_session_data(session_data, eyetrack_data, object_data):
 			""" INSERT INTO session (start_time, end_time) VALUES (%(start_time)s, %(end_time)s);
 					SELECT currval('session_id_seq');""",
 					session_data)
-
 		# get last session id
 		session_id = int(curr.fetchone()[0])
-		print session_id
 
 		# insert eyetrack data into eyetrack table
 		for eye_coord in eyetrack_data:
@@ -35,12 +33,12 @@ def insert_session_data(session_data, eyetrack_data, object_data):
 				""" INSERT INTO moving_object (session_id, x, y) VALUES (%(session_id)s, %(x)s, %(y)s);""",
 						obj_data)
 
-
 		# commit + close transaction
 		conn.commit()
 		conn.close()
 
 	except psycopg2.DatabaseError as error:
+		conn.rollback()
 		print error
 
 	finally:
