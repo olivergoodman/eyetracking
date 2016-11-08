@@ -31,7 +31,7 @@ $(document).ready(function() {
         $('#box1').stop()
         $('#box1').removeAttr('style')
         t = 0;
-        $('#box1').css({'left':'0px', 'top':'0px'});
+        $('#box1').css({'left':'100px', 'top':'50px'});
     });
 
 

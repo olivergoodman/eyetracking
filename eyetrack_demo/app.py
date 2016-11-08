@@ -3,10 +3,9 @@ from flask import Flask, render_template, session, request
 from flask_socketio import SocketIO, emit, disconnect
 import socket
 import threading
-import simplejson as json
+import json
 import csv
 import models
-import psycopg2
 
 
 # Set this variable to "threading", "eventlet" or "gevent" to test the
@@ -39,6 +38,7 @@ def background_thread():
       try:
           lst = []
           data = s.recv(BUFFER_SIZE)
+          data.replace('\n', '')
           lst.append(data)
           data_json = json.loads(lst.pop())
           eye_coord =  data_json['values']['frame']
@@ -88,8 +88,6 @@ def get_eyetrack_session_data():
   s.connect((TCP_IP, TCP_PORT))
   s.send(MESSAGE)
 
-###################### to avoid extra data error: just pass raw data string to models, parse it all there"
-
   while True: ## loop until thread is killed ?
     try:
       data = s.recv(BUFFER_SIZE)
@@ -98,9 +96,12 @@ def get_eyetrack_session_data():
       print("Error getting Eyetribe data:", e)
       raise e
     
+    data.replace('\n', '')
     EYETRACK_SESSION_DATA.append(data)
     if START_TRACKING_FLAG == False:
+      s.close()
       return EYETRACK_SESSION_DATA
+
   #start saving that stream of coordinates
   return EYETRACK_SESSION_DATA
 
@@ -115,16 +116,23 @@ def save_session(start_time, end_time, eyetrack_session_data, object_coordinates
   #     'eyetrack_session_data': eyetrack_session_data,
   #     'object_coordinates': object_coordinates})
   json_eye_data_list = []
-  for eye_data in eyetrack_session_data:
-    eye_data.replace('\n', '')
-    json_eye_coord = json.loads(eye_data)
-    avg_eye_coord = json_eye_coord['values']['frame']
-    json_eye_data_list.append(avg_eye_coord)
+  try:
+    for eye_data in eyetrack_session_data:
+      eye_data = eye_data.rstrip('\n')
+      json_eye_coord = json.loads(eye_data)
+      print eye_data
+      print json_eye_coord
+      print '---'
+      avg_eye_coord = json_eye_coord['values']['frame']
+      json_eye_data_list.append(avg_eye_coord)
 
-  session_data = {'start_time': str(start_time), 'end_time': str(end_time)}
-  models.insert_session_data(session_data, json_eye_data_list, object_coordinates)
+    session_data = {'start_time': str(start_time), 'end_time': str(end_time)}
+    models.insert_session_data(session_data, json_eye_data_list, object_coordinates)
+
+  except ValueError as e:
+    print "\t ***** ERROR: *****\n", e.message
+  
   return
-
 
 
 @app.route('/')

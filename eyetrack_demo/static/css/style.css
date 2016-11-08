@@ -36,6 +36,8 @@ body {
 	background-color: red;
 	border-radius: 100px;
 	position: relative;
+	left: 100px;
+	top: 50px;
 }
 
 .dropdown {
