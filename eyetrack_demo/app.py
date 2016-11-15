@@ -27,29 +27,6 @@ START_TRACKING_FLAG = False
 EYETRACK_SESSION_DATA = []
 START_TIME = 0
 
-def background_thread():
-    """Send server generated events to clients in background thread, includes EyeTribe data getting."""
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect((TCP_IP, TCP_PORT))
-    s.send(MESSAGE)
-
-    count = 0
-    while True:
-      try:
-          lst = []
-          data = s.recv(BUFFER_SIZE)
-          data.replace('\n', '')
-          lst.append(data)
-          data_json = json.loads(lst.pop())
-          eye_coord =  data_json['values']['frame']
-      except socket.error as e:
-          s.close()
-          print("Error getting Eyetribe data:", e)
-          raise e
-      count += 1
-      socketio.emit('my_response',
-                    {'data': eye_coord, 'count': count},
-                    namespace='/test')
 
 #-------------------------------- Get FrontEnd info -------------------------------
 @app.route('/_get_eyetrack_data', methods = ['GET', 'POST'])
@@ -106,16 +83,8 @@ def get_eyetrack_session_data():
   #start saving that stream of coordinates
   return EYETRACK_SESSION_DATA
 
-#-------------------------------- Save relevant data to csv file --------------------------------
+#-------------------------------- Save relevant data to db --------------------------------
 def save_session(start_time, end_time, eyetrack_session_data, object_coordinates):
-  # with open('sessions.csv', 'a') as f:
-  #   fieldnames = ['start_time', 'end_time', 'eyetrack_session_data', 'object_coordinates']
-  #   writer = csv.DictWriter(f, fieldnames=fieldnames)
-  #   writer.writerow({
-  #     'start_time': start_time,
-  #     'end_time': end_time,
-  #     'eyetrack_session_data': eyetrack_session_data,
-  #     'object_coordinates': object_coordinates})
   json_eye_data_list = []
   try:
     for eye_data in eyetrack_session_data:
@@ -131,12 +100,57 @@ def save_session(start_time, end_time, eyetrack_session_data, object_coordinates
   return
 
 
+#-------------------------------- Basic background thread to display live eyetribe coordinates -------------------------------
+def background_thread():
+  print 'shouldnt be in here'
+  """Send server generated events to clients in background thread, includes EyeTribe data getting."""
+  s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+  s.connect((TCP_IP, TCP_PORT))
+  s.send(MESSAGE)
+
+  count = 0
+  while True:
+    try:
+        lst = []
+        data = s.recv(BUFFER_SIZE)
+        data.replace('\n', '')
+        lst.append(data)
+        data_json = json.loads(lst.pop())
+        eye_coord =  data_json['values']['frame']
+    except socket.error as e:
+        s.close()
+        print("Error getting Eyetribe data:", e)
+        raise e
+    count += 1
+    socketio.emit('my_response',
+                  {'data': eye_coord, 'count': count},
+                  namespace='/test')
+
+#-------------------------------- Background thread to stream last session data for playback -------------------------------
+# this will eventually be a while loop and include logic to check times (see notes)
+# works if it replaces background_thread (b/c socket.connect automatically uses this thread). need to find a way
+# to choose the correct thread
+def background_thread_playback():
+  print 'in here boi'
+  data = models.get_last_session()
+  eyetribe_data = data['eyetribe_data']
+  moving_object_data = data['moving_object_data']
+
+  print eyetribe_data
+  print moving_object_data
+
+  count = 0
+  for d in eyetribe_data: 
+    socketio.emit('my_response',
+                  {'data': d, 'count': count},
+                  namespace='/test')
+
 @app.route('/')
 def index():
   return render_template('index.html', async_mode=socketio.async_mode)
 
 
-@socketio.on('my_event', namespace='/test')
+@socketio.on('connect_playback', namespace='/test')
 def test_message(message):
   session['receive_count'] = session.get('receive_count', 0) + 1
   emit('my_response',

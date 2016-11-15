@@ -37,10 +37,14 @@ $(document).ready(function() {
 
     var object_coordinates = [];
     var timer = null;
-    var interval = 100; // record every 0.1 seconds
+    var interval = 50; // record every 0.1 seconds
 
     function recordObjectPosition() {
-        object_coordinates.push($('#box1').position()); //position stored as {'left':val, 'top':val}
+        var timestamp = new Date($.now());
+        var obj = { 
+            "coordinates" : $('#box1').position(), //position stored as {'left':val, 'top':val}
+            "timestamp" : timestamp };
+        object_coordinates.push(obj); 
     };
 
     function stopRecordingObject() {
@@ -120,6 +124,49 @@ $(document).ready(function() {
         $(this).one("click", recordHandler1);
     }
 
+    ////////////////////////////////////////////// Playback behavior ////////////////////////////////////
+    $('#btn-playback').click(function() {
+        namespace = '/test';
+        var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
+        socket.on('connect_playback', function() {
+            socket.emit('my_event', {data: 'I\'m connected!'});
+        });
+
+        socket.on('my_response', function(msg) {
+            var data = msg.data;
+            console.log(data);
+        });
+
+        var ping_pong_times = [];
+        var start_time;
+        window.setInterval(function() {
+            start_time = (new Date).getTime();
+            socket.emit('my_ping');
+        }, 1000);
+
+        socket.on('my_pong', function() {
+            var latency = (new Date).getTime() - start_time;
+            ping_pong_times.push(latency);
+            ping_pong_times = ping_pong_times.slice(-30); // keep last 30 samples
+            var sum = 0;
+            for (var i = 0; i < ping_pong_times.length; i++)
+                sum += ping_pong_times[i];
+            $('#ping-pong').text(Math.round(10 * sum / ping_pong_times.length) / 10);
+        });
+
+        $('form#emit').submit(function(event) {
+            socket.emit('my_event', {data: $('#emit_data').val()});
+            return false;
+        });
+        $('form#broadcast').submit(function(event) {
+            socket.emit('my_broadcast_event', {data: $('#broadcast_data').val()});
+            return false;
+        });
+        $('form#disconnect').submit(function(event) {
+            socket.emit('disconnect_request');
+            return false;
+        });
+    });
 
     ////////////////////////////////////////////// Tracking behavior ////////////////////////////////////
     // Tracking: see if eye tracker is working
