@@ -26,6 +26,7 @@ MESSAGE = "Hello, World!"
 START_TRACKING_FLAG = False
 EYETRACK_SESSION_DATA = []
 START_TIME = 0
+RUN_PLAYBACK_FLAG = False
 
 
 #-------------------------------- Get FrontEnd info -------------------------------
@@ -102,48 +103,57 @@ def save_session(start_time, end_time, eyetrack_session_data, object_coordinates
 
 #-------------------------------- Basic background thread to display live eyetribe coordinates -------------------------------
 def background_thread():
-  print 'shouldnt be in here'
   """Send server generated events to clients in background thread, includes EyeTribe data getting."""
-  s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-  s.connect((TCP_IP, TCP_PORT))
-  s.send(MESSAGE)
+  global RUN_PLAYBACK_FLAG
 
-  count = 0
-  while True:
-    try:
-        lst = []
-        data = s.recv(BUFFER_SIZE)
-        data.replace('\n', '')
-        lst.append(data)
-        data_json = json.loads(lst.pop())
-        eye_coord =  data_json['values']['frame']
-    except socket.error as e:
-        s.close()
-        print("Error getting Eyetribe data:", e)
-        raise e
-    count += 1
-    socketio.emit('my_response',
-                  {'data': eye_coord, 'count': count},
-                  namespace='/test')
+  if RUN_PLAYBACK_FLAG == True:
+    print 'in here boi'
+    data = models.get_last_session()
+    eyetribe_data = data['eyetribe_data']
+    moving_object_data = data['moving_object_data']
 
-#-------------------------------- Background thread to stream last session data for playback -------------------------------
-# this will eventually be a while loop and include logic to check times (see notes)
-# works if it replaces background_thread (b/c socket.connect automatically uses this thread). need to find a way
-# to choose the correct thread
-def background_thread_playback():
-  print 'in here boi'
-  data = models.get_last_session()
-  eyetribe_data = data['eyetribe_data']
-  moving_object_data = data['moving_object_data']
+    print eyetribe_data
+    print moving_object_data
 
-  print eyetribe_data
-  print moving_object_data
+    count = 0
+    for d in eyetribe_data: 
+      socketio.emit('my_response',
+                    {'data': d, 'count': count},
+                    namespace='/test')
+      count += 1
 
-  count = 0
-  for d in eyetribe_data: 
-    socketio.emit('my_response',
-                  {'data': d, 'count': count},
-                  namespace='/test')
+  else:
+    print 'shouldnt be in here'
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((TCP_IP, TCP_PORT))
+    s.send(MESSAGE)
+
+    count = 0
+    while True:
+      try:
+          lst = []
+          data = s.recv(BUFFER_SIZE)
+          data.replace('\n', '')
+          lst.append(data)
+          data_json = json.loads(lst.pop())
+          eye_coord =  data_json['values']['frame']
+      except socket.error as e:
+          s.close()
+          print("Error getting Eyetribe data:", e)
+          raise e
+      count += 1
+      socketio.emit('my_response',
+                    {'data': eye_coord, 'count': count},
+                    namespace='/test')
+
+
+#-------------------------------- Get playback flag to determine which background thread to use -------------------------------
+@app.route('/_get_playback_flag', methods = ['GET', 'POST'])
+def _get_playback_flag():
+  global RUN_PLAYBACK_FLAG
+  if request.method == 'POST':
+    RUN_PLAYBACK_FLAG = request.json['run_playback']
+  return str(request.form)
 
 @app.route('/')
 def index():

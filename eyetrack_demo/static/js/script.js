@@ -59,7 +59,6 @@ $(document).ready(function() {
     ////////////////////////////////////////// handler for toggling record ON ////////////////////////////////
     function recordHandler1() {
         $('#btn-record').addClass("session-on");
-        console.log('record turned ON')
 
         // start recording object position
         if (timer !== null) return;
@@ -97,7 +96,6 @@ $(document).ready(function() {
     //////////////////////////////// handler for toggling record OFF ////////////////////////////////
     function recordHandler2() {
         $('#btn-record').removeClass("session-on");
-        console.log('record turned OFF');
 
         // end time
         var time = new Date($.now());
@@ -126,6 +124,21 @@ $(document).ready(function() {
 
     ////////////////////////////////////////////// Playback behavior ////////////////////////////////////
     $('#btn-playback').click(function() {
+        var data = {'run_playback': true}
+        $.ajax({
+            type: 'POST',
+            url: '/_get_playback_flag',
+            data: JSON.stringify(data, null, '\t'),
+            contentType: 'application/json;charset=UTF-8',
+            dataType : "json",
+            success: function(response) {
+                console.log(response);
+            },
+            error: function(response) { 
+                console.log(response.status);  
+            }
+        });
+
         namespace = '/test';
         var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
         socket.on('connect_playback', function() {
@@ -135,6 +148,13 @@ $(document).ready(function() {
         socket.on('my_response', function(msg) {
             var data = msg.data;
             console.log(data);
+
+            var x_pos = data[2];
+            var y_pos = data[3];
+
+            var c = document.getElementById('box1');
+            c.style.left = x_pos+'px';
+            c.style.top = y_pos+'px';  
         });
 
         var ping_pong_times = [];
@@ -154,15 +174,8 @@ $(document).ready(function() {
             $('#ping-pong').text(Math.round(10 * sum / ping_pong_times.length) / 10);
         });
 
-        $('form#emit').submit(function(event) {
-            socket.emit('my_event', {data: $('#emit_data').val()});
-            return false;
-        });
-        $('form#broadcast').submit(function(event) {
-            socket.emit('my_broadcast_event', {data: $('#broadcast_data').val()});
-            return false;
-        });
-        $('form#disconnect').submit(function(event) {
+        $('#btn-playback-stop').click(function(event) {
+            console.log('stop playback')
             socket.emit('disconnect_request');
             return false;
         });
@@ -171,6 +184,21 @@ $(document).ready(function() {
     ////////////////////////////////////////////// Tracking behavior ////////////////////////////////////
     // Tracking: see if eye tracker is working
     $('#btn-track').click(function() {
+        var data = {'run_playback': false}
+        $.ajax({
+            type: 'POST',
+            url: '/_get_playback_flag',
+            data: JSON.stringify(data, null, '\t'),
+            contentType: 'application/json;charset=UTF-8',
+            dataType : "json",
+            success: function(response) {
+                console.log(response);
+            },
+            error: function(response) { 
+                console.log(response.status);  
+            }
+        });
+
         // Use a "/test" namespace.
         // An application can open a connection on multiple namespaces, and
         // Socket.IO will multiplex all those connections on a single
