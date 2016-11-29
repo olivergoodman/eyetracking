@@ -29,7 +29,7 @@ def insert_session_data(session_data, eyetrack_data, object_data):
 
 		# timezone difference 
 		time_diff = time.timezone * 1000.0 #in milliseconds
-		print time_diff
+
 		# insert eyetrack data into eyetrack table
 
 		for eye_coord in eyetrack_data:

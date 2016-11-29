@@ -7,6 +7,7 @@ import json
 import csv
 import models
 import time
+import datetime
 from dateutil.parser import parse
 
 
@@ -103,6 +104,11 @@ def save_session(start_time, end_time, eyetrack_session_data, object_coordinates
   return
 
 
+
+epoch = datetime.datetime.utcfromtimestamp(0)
+def unix_time_millis(dt):
+    return (dt - epoch).total_seconds() * 1000.0
+
 #-------------------------------- Basic background thread to display live eyetribe coordinates -------------------------------
 def background_thread():
   """Send server generated events to clients in background thread, includes EyeTribe data getting."""
@@ -112,40 +118,104 @@ def background_thread():
     print 'in here boi'
     data = models.get_last_session()
     eyetribe_data = data['eyetribe_data']
+    eyetribe_data = eyetribe_data[1:] # trim first gaze coordinate, it's always way earlier than rest
     moving_object_data = data['moving_object_data']
 
-    #dicts to map timestamps to coordinates
+    # dicts in memory to map timestamps to coordinates
     gaze_coords = {}
     moving_object_coords = {}
 
-    print eyetribe_data[0][4]
-    print moving_object_data[0][4]
-    
+    # initial timestamps for both gaze and object
+    gaze_time_0 = eyetribe_data[0][5]
+    obj_time_0 = moving_object_data[0][4]
+    gaze_time_f = eyetribe_data[-1][5]
+    obj_time_f = moving_object_data[-1][4]
+    print gaze_time_0
+    print obj_time_0
+
+    # ~~~~ DICTIONARY IN MEMORY ~~~~ #
+    # # fill up coordinate dictionaries
+    # for e in eyetribe_data:
+    #   x = e[2] #x val for single eye coord
+    #   y = e[3] #y val for single eye coord
+    #   t = int(e[5] - gaze_time_0) #the timestamp for a single coordinate
+    #   gaze_coords[t] = (x, y)
+
+    # for m in moving_object_data:
+    #   x = m[2] #x val for single eye coord
+    #   y = m[3] #y val for single eye coord
+    #   t = int(m[4] - obj_time_0) #the timestamp for a single coordinate
+    #   moving_object_coords[t] = (x, y)
+
+    # print gaze_coords
+    # print moving_object_coords
+
+    # ~~~~ LISTS IN MEMORY ~~~~ #
+    # lists in memory to match coords with playback time
+    gaze_list = [None]*int(gaze_time_f - gaze_time_0)
+    moving_object_list = [None]*int(obj_time_f - obj_time_0)
+    print 'l:', len(gaze_list)
+    print 'l:', len(moving_object_list)
+
+    # fill up coordinate lists
     for e in eyetribe_data:
       x = e[2] #x val for single eye coord
       y = e[3] #y val for single eye coord
-      t = e[4] #the timestamp for a single coordinate
-      t = parse(e[4]) #the timestamp for a single coordinate
-      tt = int(time.mktime(t.timetuple())) #convert timestamp to milliseconds
-      gaze_coords[tt] = (x, y)
+      t = int(e[5] - gaze_time_0) #the normalized timestamp for a single coordinate
+      if (t != len(gaze_list)):
+        gaze_list[t] = (x, y)
 
     for m in moving_object_data:
       x = m[2] #x val for single eye coord
       y = m[3] #y val for single eye coord
-      t = parse(m[4]) #the timestamp for a single coordinate
-      tt = int(time.mktime(t.timetuple()))#convert timestamp to milliseconds
-      moving_object_coords[tt] = (x, y)
+      t = int(m[4] - obj_time_0) #the normalized timestamp for a single coordinate
+      if (t != len(moving_object_list)):
+        moving_object_list[t] = (x, y)
+    # print gaze_list
+    # print moving_object_list
 
-    print gaze_coords
-    print moving_object_coords
+    # get system time to start
+    system_time_start = unix_time_millis(datetime.datetime.now())
+    count = 0
+    while True:
+      system_time_i = unix_time_millis(datetime.datetime.now())
+      playback_time_i = int( (system_time_i - system_time_start) * 1000 ) # multiply by 1000 to convert microseconds to milliseconds
+      
+      # code for using dictionaries in memory
+      # #check if a gaze coord is at current time
+      # if (playback_time_i in gaze_coords):
+      #   eyetribe_coord = gaze_coords[playback_time_i]
+      #   print "found gaze coord"
+      # else:
+      #   eyetribe_coord = None
 
-    #get system time to start
-    # system_time_start = int(round(time.time() * 1000))
-    # print system_time_start
-    # while True:
-    #   system_time_now = time.time()*1000.0
+      # #check if an object coord is at current time
+      # if (playback_time_i in moving_object_coords):
+      #   object_coord = moving_object_coords[playback_time_i]
+      #   print "found obj coord"
+      # else:
+      #   object_coord = None
 
+      if (playback_time_i < len(gaze_list)):
+        eyetribe_coord = gaze_list[int(playback_time_i)]
 
+      if (playback_time_i < len(moving_object_list)):
+        object_coord = moving_object_list[int(playback_time_i)]
+
+      socketio.emit('my_response',
+                    {'data': {'eyetribe_coord': eyetribe_coord, 'object_coord': object_coord}, 'count': count},
+                    namespace='/test')
+      count += 1
+
+      if (count > len(moving_object_data) and count > len(eyetribe_data)):
+        return
+    
+      ##### ~~~~~~~~~~~~~~~~~~~~~~~~ to do ~~~~~~~~~
+      # figure out why playback_time_i never matching up with indexes in object/gaze lists ??? 
+      # then decide between dict vs lists in memory
+      # was having trouble directly mapping with dicts as well
+
+    # ~~~just a test if eyetribe data passed forward OK~~~
     # count = 0
     # for d in eyetribe_data: 
     #   socketio.emit('my_response',

@@ -148,13 +148,12 @@ $(document).ready(function() {
         socket.on('my_response', function(msg) {
             var data = msg.data;
             console.log(data);
-
-            var x_pos = data[2];
-            var y_pos = data[3];
-
-            var c = document.getElementById('box1');
-            c.style.left = x_pos+'px';
-            c.style.top = y_pos+'px';  
+            // NEED TO UPDATE HERE TO ONLY GET THE X,Y COORDINATES FOR A GIVEN DATA POINT
+            // var x_pos = data[2];
+            // var y_pos = data[3];
+            // var c = document.getElementById('cursor');
+            // c.style.left = x_pos+'px';
+            // c.style.top = y_pos+'px';  
         });
 
         var ping_pong_times = [];
