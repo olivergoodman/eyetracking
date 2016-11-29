@@ -6,6 +6,8 @@ import threading
 import json
 import csv
 import models
+import time
+from dateutil.parser import parse
 
 
 # Set this variable to "threading", "eventlet" or "gevent" to test the
@@ -112,15 +114,44 @@ def background_thread():
     eyetribe_data = data['eyetribe_data']
     moving_object_data = data['moving_object_data']
 
-    print eyetribe_data
-    print moving_object_data
+    #dicts to map timestamps to coordinates
+    gaze_coords = {}
+    moving_object_coords = {}
 
-    count = 0
-    for d in eyetribe_data: 
-      socketio.emit('my_response',
-                    {'data': d, 'count': count},
-                    namespace='/test')
-      count += 1
+    print eyetribe_data[0][4]
+    print moving_object_data[0][4]
+    
+    for e in eyetribe_data:
+      x = e[2] #x val for single eye coord
+      y = e[3] #y val for single eye coord
+      t = e[4] #the timestamp for a single coordinate
+      t = parse(e[4]) #the timestamp for a single coordinate
+      tt = int(time.mktime(t.timetuple())) #convert timestamp to milliseconds
+      gaze_coords[tt] = (x, y)
+
+    for m in moving_object_data:
+      x = m[2] #x val for single eye coord
+      y = m[3] #y val for single eye coord
+      t = parse(m[4]) #the timestamp for a single coordinate
+      tt = int(time.mktime(t.timetuple()))#convert timestamp to milliseconds
+      moving_object_coords[tt] = (x, y)
+
+    print gaze_coords
+    print moving_object_coords
+
+    #get system time to start
+    # system_time_start = int(round(time.time() * 1000))
+    # print system_time_start
+    # while True:
+    #   system_time_now = time.time()*1000.0
+
+
+    # count = 0
+    # for d in eyetribe_data: 
+    #   socketio.emit('my_response',
+    #                 {'data': d, 'count': count},
+    #                 namespace='/test')
+    #   count += 1
 
   else:
     print 'shouldnt be in here'

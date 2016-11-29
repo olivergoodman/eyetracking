@@ -1,4 +1,11 @@
 import psycopg2
+import time
+from dateutil.parser import parse
+import datetime
+
+epoch = datetime.datetime.utcfromtimestamp(0)
+def unix_time_millis(dt):
+    return (dt - epoch).total_seconds() * 1000.0
 
 #------------------------------Inserts the session data--------------------------------
 def insert_session_data(session_data, eyetrack_data, object_data):
@@ -20,13 +27,19 @@ def insert_session_data(session_data, eyetrack_data, object_data):
 		# get last session id
 		session_id = int(curr.fetchone()[0])
 
+		# timezone difference 
+		time_diff = time.timezone * 1000.0 #in milliseconds
+		print time_diff
 		# insert eyetrack data into eyetrack table
+
 		for eye_coord in eyetrack_data:
+			t = parse(eye_coord['timestamp']) #the timestamp for a single coordinate
+			t_milli = unix_time_millis(t) + time_diff #timestamp in milliseconds + time difference to UTC in milli b/c eyetribe stores local time
 			eye_data = {
 						'session_id': session_id, 
 						'x': int(eye_coord['avg']['x']), 
 						'y': int(eye_coord['avg']['y']),
-						'timestamp': eye_coord['timestamp'],
+						'timestamp': t_milli,
 						'time': eye_coord['time']}
 			curr.execute(
 				""" INSERT INTO eyetrack (session_id, x, y, timestamp, time) 
@@ -35,11 +48,16 @@ def insert_session_data(session_data, eyetrack_data, object_data):
 
 		# insert object data into moving_object table 
 		for obj_coord in object_data:
+			x = obj_coord['timestamp']
+			x = x.replace('T', ' ')
+			x = x.replace('Z', ' ')  #need to remove extra chars so it will parse correctly ?
+			t = parse(x)  #timestamp for single coord
+			t_milli = unix_time_millis(t) #time stamp w/o time difference (front end already in utc time)
  			obj_data = {
  						'session_id': session_id,
  						'x': obj_coord['coordinates']['left'], 
  						'y': obj_coord['coordinates']['top'],
- 						'timestamp': obj_coord['timestamp']}
+ 						'timestamp': t_milli}
 			curr.execute(
 				""" INSERT INTO moving_object (session_id, x, y, timestamp) 
 				VALUES (%(session_id)s, %(x)s, %(y)s, %(timestamp)s);""",
