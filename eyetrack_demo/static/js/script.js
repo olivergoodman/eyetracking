@@ -2,6 +2,7 @@ $(document).ready(function() {
 
     var t = 0;
     function moveit() {
+        // console.log($('#box1').position());
         t += 0.02;
         var r = 250;
         var xcenter = 300;
@@ -147,13 +148,27 @@ $(document).ready(function() {
 
         socket.on('my_response', function(msg) {
             var data = msg.data;
-            console.log(data);
-            // NEED TO UPDATE HERE TO ONLY GET THE X,Y COORDINATES FOR A GIVEN DATA POINT
-            // var x_pos = data[2];
-            // var y_pos = data[3];
-            // var c = document.getElementById('cursor');
-            // c.style.left = x_pos+'px';
-            // c.style.top = y_pos+'px';  
+            var c = document.getElementById('cursor');
+            var o = document.getElementById('box1');
+            // console.log(data);
+
+            // update the eyetribe cursor's position
+            if (data['eyetribe_coord'] != undefined) {
+                console.log(data);
+                var x_pos_gaze = data['eyetribe_coord'][0];
+                var y_pos_gaze = data['eyetribe_coord'][1];
+                c.style.left = x_pos_gaze+'px';
+                c.style.top = y_pos_gaze+'px';
+            }
+
+            // update the moving object's position
+            if (data['object_coord'] != undefined) {
+                console.log(data);
+                var x_pos_obj = data['object_coord'][0];
+                var y_pos_obj = data['object_coord'][1];
+                o.style.left = x_pos_obj+'px';
+                o.style.top = y_pos_obj+'px';                
+            }
         });
 
         var ping_pong_times = [];
@@ -174,7 +189,6 @@ $(document).ready(function() {
         });
 
         $('#btn-playback-stop').click(function(event) {
-            console.log('stop playback')
             socket.emit('disconnect_request');
             return false;
         });

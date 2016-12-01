@@ -31,7 +31,6 @@ def insert_session_data(session_data, eyetrack_data, object_data):
 		time_diff = time.timezone * 1000.0 #in milliseconds
 
 		# insert eyetrack data into eyetrack table
-
 		for eye_coord in eyetrack_data:
 			t = parse(eye_coord['timestamp']) #the timestamp for a single coordinate
 			t_milli = unix_time_millis(t) + time_diff #timestamp in milliseconds + time difference to UTC in milli b/c eyetribe stores local time
