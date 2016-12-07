@@ -70,7 +70,7 @@ def get_eyetrack_session_data():
   s.connect((TCP_IP, TCP_PORT))
   s.send(MESSAGE)
 
-  while True: ## loop until thread is killed ?
+  while True: ## loop until thread is killed
     try:
       decoder = json.JSONDecoder()
       data = s.recv(BUFFER_SIZE)
@@ -116,10 +116,10 @@ def background_thread():
 
   if RUN_PLAYBACK_FLAG == True:
     ##### ~~~~~~~~~~~~~~~~~~~~~~~~ to do ~~~~~~~~~
-    # figure out why playback_time_i never matching up with indexes in object/gaze lists ???
+    # figure out why playback_now never matching up with indexes in object/gaze lists ???
     # was having trouble directly mapping with dicts as well
     # moving object coords apparently not being stored correctly.. might have to do with its position within a container
-    # right now, when playback_time_i does match with some gaze/object coord timestamps, they are playbacked wayyy faster. 
+    # right now, when playback_now does match with some gaze/object coord timestamps, they are playbacked wayyy faster. 
     #   Maybe need to have system wait (wait time would be the time difference b/w found coords... this means a dictionary might be necessary over lists)
 
     print 'inside playback thread'
@@ -135,12 +135,11 @@ def background_thread():
     # initial and final timestamps for both gaze and object
     gaze_time_0 = eyetribe_data[0][5]
     obj_time_0 = moving_object_data[0][4]
-    normalize_start_time = min(gaze_time_0, obj_time_0)
+    initial_time = min(gaze_time_0, obj_time_0)
     gaze_time_f = eyetribe_data[-1][5]
     obj_time_f = moving_object_data[-1][4]
-    normalize_list_len = max(gaze_time_f, obj_time_f) - normalize_start_time # want our lists to have length equal to longest session
-    print "first gaze time", gaze_time_0
-    print "first obj time", obj_time_0
+    end_time = max(gaze_time_f, obj_time_f) # want our lists to have length equal to longest session
+    total_time = end_time - initial_time
 
     ## ~~~~ DICTIONARY IN MEMORY ~~~~ #
     # # fill up coordinate dictionaries
@@ -160,8 +159,8 @@ def background_thread():
 
     ## ~~~~ LISTS IN MEMORY ~~~~ #
     # lists in memory to match coords with playback time
-    gaze_list = [None]*int(normalize_list_len)
-    moving_object_list = [None]*int(normalize_list_len)
+    gaze_list = [None]*int(total_time)
+    moving_object_list = [None]*int(total_time)
     print 'len gaze_list:', len(gaze_list)
     print 'len obj list:', len(moving_object_list)
 
@@ -169,72 +168,54 @@ def background_thread():
     for e in eyetribe_data:
       x = e[2] #x val for single eye coord
       y = e[3] #y val for single eye coord
-      t = int(e[5] - normalize_start_time) #the normalized timestamp for a single coordinate
+      t = int(e[5] - initial_time) #the normalized timestamp for a single coordinate
       if (t != len(gaze_list)):
         gaze_list[t] = (x, y)
 
     for m in moving_object_data:
       x = m[2] #x val for single eye coord
       y = m[3] #y val for single eye coord
-      t = int(m[4] - normalize_start_time) #the normalized timestamp for a single coordinate
+      t = int(m[4] - initial_time) #the normalized timestamp for a single coordinate
       if (t != len(moving_object_list)):
         moving_object_list[t] = (x, y)
     # print gaze_list
     # print moving_object_list
 
     # get system time to start
-    system_time_start = unix_time_millis(datetime.datetime.now())
-    print "sys start at:", system_time_start
+    start_time = int(round(time.time() * 1000))
+    print "sys start at:", start_time
     count = 0
-    playback_times = []
+    # playback_times = []
     while True:
-      system_time_i = unix_time_millis(datetime.datetime.now())
-      playback_time_i = int( (system_time_i - system_time_start) * 1000 ) # multiply by 1000 to convert microseconds to milliseconds
-      playback_times.append(playback_time_i)
-      # # code for using DICTIONARIES in memory
-      # # check if a gaze coord is at current time
-      # if (playback_time_i in gaze_coords):
-      #   eyetribe_coord = gaze_coords[playback_time_i]
-      #   print "found gaze coord"
-      # else:
-      #   eyetribe_coord = None
+      system_time_now = int(round(time.time() * 1000))
+      playback_now = system_time_now - start_time 
+      # playback_times.append(playback_now)
 
-      # # check if an object coord is at current time
-      # if (playback_time_i in moving_object_coords):
-      #   object_coord = moving_object_coords[playback_time_i]
-      #   print "found obj coord"
-      # else:
-      #   object_coord = None
+      if playback_now >= total_time:
+        break
+      eyetribe_coord = gaze_list[playback_now]
+      object_coord = moving_object_list[playback_now]
+      print eyetribe_coord
+      print object_coord
 
-      # code for using LISTS in memory
-      if (playback_time_i < len(gaze_list)):
-        eyetribe_coord = gaze_list[int(playback_time_i)]
-
-      if (playback_time_i < len(moving_object_list)):
-        object_coord = moving_object_list[int(playback_time_i)]
-
-      socketio.emit('my_response',
-                    {'data': {'eyetribe_coord': eyetribe_coord, 'object_coord': object_coord}, 'count': count},
-                    namespace='/test')
+      if eyetribe_coord is None or object_coord is None:
+        if eyetribe_coord is not None:
+          socketio.emit('my_response',
+                        {'data': {'eyetribe_coord': eyetribe_coord, 'object_coord': None}, 'count': count},
+                        namespace='/test')
+        elif object_coord is not None:
+          socketio.emit('my_response',
+                       {'data': {'eyetribe_coord': None, 'object_coord': object_coord}, 'count': count},
+                       namespace='/test')
+      else:
+        socketio.emit('my_response',
+                     {'data': {'eyetribe_coord': eyetribe_coord, 'object_coord': object_coord}, 'count': count},
+                     namespace='/test')       
       count += 1
 
-      if (count > len(moving_object_data) and count > len(eyetribe_data)):
-        break
-
-    data = {'playback_times': playback_times, 'eyetrack_data': eyetribe_data, 'moving_object_data': moving_object_data, 'gaze_list': gaze_list, 'moving_object_list': moving_object_list}
-    pickle.dump(data, open('playback', 'w'))
-
+    # data = {'playback_times': playback_times, 'eyetrack_data': eyetribe_data, 'moving_object_data': moving_object_data, 'gaze_list': gaze_list, 'moving_object_list': moving_object_list}
+    # pickle.dump(data, open('playback', 'w'))
     print "final count", count
-
-    # ~~~just a test if eyetribe data passed forward OK~~~
-    # count = 0
-    # for d in eyetribe_data: 
-    #   eyetribe_coord = (d[2], d[3])
-    #   data = {'eyetribe_coord': eyetribe_coord}
-    #   socketio.emit('my_response',
-    #                 {'data': data, 'count': count},
-    #                 namespace='/test')
-    #   count += 1
 
   else:
     print 'shouldnt be in here'
