@@ -150,11 +150,10 @@ $(document).ready(function() {
             var data = msg.data;
             var c = document.getElementById('cursor');
             var o = document.getElementById('box1');
-            // console.log(data);
 
             // update the eyetribe cursor's position
             if (data['eyetribe_coord'] != undefined) {
-                console.log(data);
+                // console.log(data);
                 var x_pos_gaze = data['eyetribe_coord'][0];
                 var y_pos_gaze = data['eyetribe_coord'][1];
                 c.style.left = x_pos_gaze+'px';
@@ -163,13 +162,13 @@ $(document).ready(function() {
 
             // update the moving object's position
             if (data['object_coord'] != undefined) {
-                console.log(data);
+                // console.log(data);
                 var x_pos_obj = data['object_coord'][0];
                 var y_pos_obj = data['object_coord'][1];
-                o.style.left = x_pos_obj+'px';
-                o.style.top = y_pos_obj+'px';                
+                $("#box1").css({top: y_pos_obj+'px', left: x_pos_obj+'px', position:'absolute'});              
             }
         });
+
 
         var ping_pong_times = [];
         var start_time;
@@ -188,10 +187,13 @@ $(document).ready(function() {
             $('#ping-pong').text(Math.round(10 * sum / ping_pong_times.length) / 10);
         });
 
+        $("#box1").css({position:'relative'}); 
+
         $('#btn-playback-stop').click(function(event) {
             socket.emit('disconnect_request');
             return false;
         });
+
     });
 
     ////////////////////////////////////////////// Tracking behavior ////////////////////////////////////

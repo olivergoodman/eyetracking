@@ -4,18 +4,15 @@ from flask_socketio import SocketIO, emit, disconnect
 import socket
 import threading
 import json
-import csv
 import models
 import time
-import datetime
-from dateutil.parser import parse
 import pickle
 
 
 # Set this variable to "threading", "eventlet" or "gevent" to test the
 # different async modes, or leave it set to None for the application to choose
 # the best option based on installed packages.
-async_mode = None
+async_mode = "gevent"
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -104,23 +101,14 @@ def save_session(start_time, end_time, eyetrack_session_data, object_coordinates
   
   return
 
-
-epoch = datetime.datetime.utcfromtimestamp(0)
-def unix_time_millis(dt):
-    return (dt - epoch).total_seconds() * 1000.0
-
 #-------------------------------- Basic background thread to display live eyetribe coordinates -------------------------------
 def background_thread():
   """Send server generated events to clients in background thread, includes EyeTribe data getting."""
   global RUN_PLAYBACK_FLAG
 
   if RUN_PLAYBACK_FLAG == True:
-    ##### ~~~~~~~~~~~~~~~~~~~~~~~~ to do ~~~~~~~~~
-    # figure out why playback_now never matching up with indexes in object/gaze lists ???
-    # was having trouble directly mapping with dicts as well
-    # moving object coords apparently not being stored correctly.. might have to do with its position within a container
-    # right now, when playback_now does match with some gaze/object coord timestamps, they are playbacked wayyy faster. 
-    #   Maybe need to have system wait (wait time would be the time difference b/w found coords... this means a dictionary might be necessary over lists)
+    f = open('output.txt', 'w')
+    f.write('\n thread start time:' + str(int(round(time.time() * 1000))))
 
     print 'inside playback thread'
     data = models.get_last_session()
@@ -148,21 +136,16 @@ def background_thread():
     #   y = e[3] #y val for single eye coord
     #   t = int(e[5] - gaze_time_0) #the timestamp for a single coordinate
     #   gaze_coords[t] = (x, y)
-
     # for m in moving_object_data:
     #   x = m[2] #x val for single eye coord
     #   y = m[3] #y val for single eye coord
     #   t = int(m[4] - obj_time_0) #the timestamp for a single coordinate
     #   moving_object_coords[t] = (x, y)
-    # print gaze_coords
-    # print moving_object_coords
 
     ## ~~~~ LISTS IN MEMORY ~~~~ #
     # lists in memory to match coords with playback time
     gaze_list = [None]*int(total_time)
     moving_object_list = [None]*int(total_time)
-    print 'len gaze_list:', len(gaze_list)
-    print 'len obj list:', len(moving_object_list)
 
     # fill up coordinate lists
     for e in eyetribe_data:
@@ -171,19 +154,14 @@ def background_thread():
       t = int(e[5] - initial_time) #the normalized timestamp for a single coordinate
       if (t != len(gaze_list)):
         gaze_list[t] = (x, y)
-
     for m in moving_object_data:
       x = m[2] #x val for single eye coord
       y = m[3] #y val for single eye coord
       t = int(m[4] - initial_time) #the normalized timestamp for a single coordinate
       if (t != len(moving_object_list)):
         moving_object_list[t] = (x, y)
-    # print gaze_list
-    # print moving_object_list
 
-    # get system time to start
     start_time = int(round(time.time() * 1000))
-    print "sys start at:", start_time
     count = 0
     # playback_times = []
     while True:
@@ -195,8 +173,8 @@ def background_thread():
         break
       eyetribe_coord = gaze_list[playback_now]
       object_coord = moving_object_list[playback_now]
-      print eyetribe_coord
-      print object_coord
+      # print eyetribe_coord
+      # print object_coord
 
       if eyetribe_coord is None or object_coord is None:
         if eyetribe_coord is not None:
@@ -213,9 +191,14 @@ def background_thread():
                      namespace='/test')       
       count += 1
 
+      # f.write('\n' + str(count) + 'time in loop:' + str(int(round(time.time() * 1000)) -  playback_now))
+
     # data = {'playback_times': playback_times, 'eyetrack_data': eyetribe_data, 'moving_object_data': moving_object_data, 'gaze_list': gaze_list, 'moving_object_list': moving_object_list}
     # pickle.dump(data, open('playback', 'w'))
-    print "final count", count
+    # print "final count", count
+    f.write('\n thread end time:' + str(int(round(time.time() * 1000))))
+    f.close()
+    
 
   else:
     print 'shouldnt be in here'
