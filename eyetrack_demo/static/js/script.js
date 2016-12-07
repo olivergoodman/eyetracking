@@ -151,9 +151,10 @@ $(document).ready(function() {
             var c = document.getElementById('cursor');
             var o = document.getElementById('box1');
 
+
             // update the eyetribe cursor's position
-            if (data['eyetribe_coord'] != undefined) {
-                // console.log(data);
+            if (data['eyetribe_coord'] != null) {
+                console.log(data);
                 var x_pos_gaze = data['eyetribe_coord'][0];
                 var y_pos_gaze = data['eyetribe_coord'][1];
                 c.style.left = x_pos_gaze+'px';
@@ -161,8 +162,8 @@ $(document).ready(function() {
             }
 
             // update the moving object's position
-            if (data['object_coord'] != undefined) {
-                // console.log(data);
+            if (data['object_coord'] != null) {
+                console.log(data);
                 var x_pos_obj = data['object_coord'][0];
                 var y_pos_obj = data['object_coord'][1];
                 $("#box1").css({top: y_pos_obj+'px', left: x_pos_obj+'px', position:'absolute'});              
